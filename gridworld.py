@@ -56,7 +56,7 @@ class GridWorld:
         if self.nstep > self.duration:
             self.terminate = True
             r = -50
-            print("Maximum number of actions exceeded")
+            # print("Maximum number of actions exceeded")
 
         if not self.s == self.goal and not self.terminate:
 
