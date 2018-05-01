@@ -24,7 +24,7 @@ plotting = True
 
 class Agent:
 
-    def __init__(self, gamma):
+    def __init__(self, worldstates, gamma):
         self.actions = ["N", "E", "S", "W"]
         self.policy_eps = 0.1
         self.gamma = gamma
@@ -35,6 +35,17 @@ class Agent:
         self.action = 0
         self.decision_state = 0
         self.reset()
+
+        # Initialize value functions (naive strategy)
+        for state in worldstates:
+
+            self.Vfunc[state] = 0
+            self.N[state] = {}
+            self.Qfunc[state] = {}
+
+            for action in self.actions:
+                self.N[state][action] = 0
+                self.Qfunc[state][action] = 0
 
     def reset(self):
         self.sahist = []
@@ -47,14 +58,7 @@ class Agent:
         # Store everything we see until the end of the episode
         self.sahist.append((self.decision_state, self.action))
         self.rhist.append(reward)
-
-        if self.decision_state not in self.N:
-            self.N[self.decision_state] = {}
-
-        if action not in self.N[self.decision_state]:
-            self.N[self.decision_state][self.action] = 1
-        else:
-            self.N[self.decision_state][self.action] += 1
+        self.N[self.decision_state][self.action] += 1
 
     # Define every-visit MC policy evaluation
     def evaluate(self):
@@ -68,12 +72,6 @@ class Agent:
 
         # Update Q-table with the returns observed in this episode
         for (state, action) in self.G:
-
-            # Initialize naively
-            if state not in self.Qfunc:
-                self.Qfunc[state] = {}
-            if action not in self.Qfunc[state]:
-                self.Qfunc[state][action] = 0
 
             # Perform update
             self.Qfunc[state][action] += 1/self.N[state][action] * \
@@ -98,7 +96,7 @@ class Agent:
         Qvalues = self.Qfunc.get(self.decision_state, {})
 
         # Policy is epsilon-greedy
-        if random() < self.policy_eps or len(Qvalues) < 1:
+        if random() < self.policy_eps:
             action_arg = randint(0, len(self.actions)-1)
             self.action = self.actions[action_arg]
         else:
@@ -152,24 +150,30 @@ def Vrender(Vfunc, worldsize, start, goal):
 
 # Define hyperparameters
 duration = 200
-n_episodes = 2000
-gamma = 0.97
+n_episodes = 1000
+gamma = 0.95
 
 # Initialize grid world
 gridsize = (10, 10)
 grid = GridWorld(gridsize)
-start, goal = ([0, 1], [7, 8])
+start, goal = ([0, 1], [8, 2])
 grid.set_task(start, goal, duration)
-# grid.winds.define(1, [3, 6], "N")
+grid.winds.define(1, [3, 6], "N")
+
+# Create list of all possible states in this gridworld
+worldstates = []
+for we in range(gridsize[0]):
+    for ns in range(gridsize[1]):
+        worldstates.append((we,ns))
 
 # Define agent
-bot = Agent(gamma)
+bot = Agent(worldstates,gamma)
 
 # Define auxiliary variables
 epsreward = []
 
 # Set seed
-seed(9002)
+seed(9001)
 
 # Train agent
 for i in range(n_episodes):
@@ -209,7 +213,7 @@ if plotting:
     plt.plot(epsreward)
     plt.xlabel("Episode [-]")
     plt.ylabel("Cumulative reward per episode [-]")
-    plt.title("Every-visit MC-ES $\epsilon$-greedy learning curve")
+    plt.title("Every-visit MC $\epsilon$-greedy learning curve")
     plt.grid()
 
     # Display value function

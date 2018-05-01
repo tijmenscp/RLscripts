@@ -55,7 +55,7 @@ class GridWorld:
         # Check if episode needs to be terminated
         if self.nstep > self.duration:
             self.terminate = True
-            r = -10
+            r = -50
             print("Maximum number of actions exceeded")
 
         if not self.s == self.goal and not self.terminate:
